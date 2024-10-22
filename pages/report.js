@@ -1,7 +1,7 @@
 // pages/report.js
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import html2pdf from 'html2pdf.js';
+import dynamic from 'next/dynamic';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Title, Tooltip, Legend } from 'chart.js';
 
@@ -10,6 +10,18 @@ ChartJS.register(BarElement, CategoryScale, LinearScale, Title, Tooltip, Legend)
 export default function Report() {
   const router = useRouter();
   const [reportData, setReportData] = useState(null);
+  const [html2pdf, setHtml2pdf] = useState(null);
+
+  useEffect(() => {
+    // Dynamically import html2pdf only on the client-side
+    const loadHtml2Pdf = async () => {
+      if (typeof window !== 'undefined') {
+        const html2pdfModule = (await import('html2pdf.js')).default;
+        setHtml2pdf(() => html2pdfModule);
+      }
+    };
+    loadHtml2Pdf();
+  }, []);
 
   useEffect(() => {
     if (router.query) {
@@ -36,8 +48,10 @@ export default function Report() {
   };
 
   const handleDownloadPDF = () => {
-    const element = document.getElementById('report-content');
-    html2pdf().from(element).save('EnergyReport.pdf');
+    if (html2pdf) {
+      const element = document.getElementById('report-content');
+      html2pdf().from(element).save('EnergyReport.pdf');
+    }
   };
 
   const chartData = {
@@ -85,7 +99,7 @@ export default function Report() {
         </table>
         <div className="mt-4">
           <h2 className="text-lg font-semibold">Monthly Cost Comparison</h2>
-          <div className="w-1/2  h-2/3 mx-auto">
+          <div className="w-1/2 h-2/3 mx-auto">
             <Bar data={chartData} options={{ responsive: true, plugins: { legend: { position: 'top' } }, maintainAspectRatio: false }} />
           </div>
         </div>
